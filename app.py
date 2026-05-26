@@ -252,12 +252,13 @@ def fill_text_fields(writer, fields):
             writer.update_page_form_field_values(page, fields)
 
 def run_service_agreement(df, pdf_template_bytes):
-    name_col     = find_col(df, ['SEAFARER NAME','Seafarer Name','Full Name','Crew Name','First Name','Name','Nama'])
+    fn_col       = find_col(df, ['First Name ','First Name','FirstName'])
+    ln_col       = find_col(df, ['Unnamed: 12','Last Name','LastName','Surname'])
     sod_col      = find_col(df, ['Sign On Date','SignOnDate','SOD','Embarkation Date'])
-    position_col = find_col(df, ['Position','Title','Rank','Jabatan'])
-    principal_col= find_col(df, ['Cruise Line','Principal','Line','Company'])
+    position_col = find_col(df, ['Position Hired','Position','Title','Rank','Jabatan'])
+    principal_col= find_col(df, ['Cruise Line ','Cruise Line','Principal','Line','Company'])
     crew_id_col  = find_col(df, ['Crew ID','CrewID','Crew Id','ID'])
-    vessel_col   = find_col(df, ['Ship','Vessel','Vessel Name','Kapal'])
+    vessel_col   = find_col(df, ['Joining Ship /Vessel','Joining Ship','Ship','Vessel','Vessel Name','Kapal'])
     doc_col      = find_col(df, ['Documents Processed by Seafarer','Documents Processed'])
 
     if not doc_col:
@@ -275,9 +276,10 @@ def run_service_agreement(df, pdf_template_bytes):
                 skipped += 1
                 continue
 
-            raw_name = clean_cell(row.get(name_col, '')) if name_col else ''
-            if not raw_name:
-                raw_name = f'candidate_{idx+1}'
+            # Build full name from first + last name columns
+            first = clean_cell(row.get(fn_col, '')) if fn_col else ''
+            last  = clean_cell(row.get(ln_col, '')) if ln_col else ''
+            raw_name = (first + ' ' + last).strip() or f'candidate_{idx+1}'
             clean_name = safe_filename(raw_name)
             service_date = parse_service_date(row, sod_col)
             out_filename = f'Service Agreement_{clean_name}_{service_date}.pdf'
@@ -288,21 +290,28 @@ def run_service_agreement(df, pdf_template_bytes):
             try: writer.set_need_appearances_writer()
             except: pass
 
-            fields = {'SEAFARER NAME ': raw_name, 'SEAFARER NAME': raw_name, 'Crew Name': raw_name}
-            if position_col: 
+            fields = {
+                'Crew Name':      raw_name,
+                'SEAFARER NAME':  raw_name,
+                'SEAFARER NAME ': raw_name,
+                'Date 1':         service_date,
+                'DATE':           service_date,
+                'CTI GROUP OFFICER': 'Puput Putri',
+                'DATE_2':         service_date,
+                'POSITION TITLE': 'Accounting Officer',
+            }
+            if position_col:
                 v = clean_cell(row.get(position_col,''))
-                fields.update({'POSITION':v,'POSITION / TITLE':v,'Position':v})
+                fields.update({'Position':v, 'POSITION':v, 'POSITION / TITLE':v})
             if principal_col:
                 v = clean_cell(row.get(principal_col,''))
-                fields.update({'PRINCIPAL / LINE':v,'Principal Line':v})
+                fields.update({'Principal Line':v, 'PRINCIPAL / LINE':v})
             if crew_id_col:
                 v = clean_id(row.get(crew_id_col,''))
-                fields.update({'SEAFARER ID':v,'Crew ID':v})
+                fields.update({'Crew ID':v, 'SEAFARER ID':v})
             if vessel_col:
                 v = clean_cell(row.get(vessel_col,''))
-                fields.update({'VESSEL NAME':v,'Vessel Name':v})
-            if sod_col:
-                fields.update({'DATE':service_date,'Date 1':service_date})
+                fields.update({'Vessel Name':v, 'VESSEL NAME':v})
 
             fill_text_fields(writer, fields)
 
