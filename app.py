@@ -175,6 +175,7 @@ def run_lookup(proc_file, lookup_files):
             key = row['_phone'] if cfg['match']=='phone' else row['_crew'] if cfg['match']=='crew' else row['_name']
             if key in s:
                 docs.append(f"{cfg['label']} (done)")
+        docs.append('GL (done)')
         return ', '.join(docs) if docs else ''
 
     proc['_result'] = proc.apply(get_docs, axis=1)
