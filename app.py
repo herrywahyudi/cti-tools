@@ -369,14 +369,22 @@ with tab1:
             with st.spinner('Matching documents...'):
                 result, log = run_lookup(proc_file, lookup_files)
             if result:
-                st.success('Done!')
-                st.code(log)
                 ts = datetime.now().strftime('%Y%m%d_%H%M%S')
                 fname = proc_file.name.replace('.xlsx','') + f'_updated_{ts}.xlsx'
-                st.download_button('⬇ Download Updated Excel', result, file_name=fname,
-                                   mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                st.session_state['lookup_result'] = result.getvalue()
+                st.session_state['lookup_fname'] = fname
+                st.session_state['lookup_log'] = log
             else:
                 st.error(log)
+
+        if 'lookup_result' in st.session_state:
+            st.success('Done!')
+            st.code(st.session_state['lookup_log'])
+            st.download_button('⬇ Download Updated Excel',
+                               data=st.session_state['lookup_result'],
+                               file_name=st.session_state['lookup_fname'],
+                               mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                               key='dl_lookup')
     else:
         st.info('Upload your Processing file and all lookup files to get started.')
 
@@ -421,14 +429,21 @@ with tab2:
                 zip_out, log = run_service_agreement(df, pdf_bytes)
 
             if zip_out:
-                st.success('Done!')
-                st.code(log)
                 ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-                st.download_button('⬇ Download All PDFs (ZIP)', zip_out,
-                                   file_name=f'Service_Agreements_{ts}.zip',
-                                   mime='application/zip')
+                st.session_state['sa_zip'] = zip_out.getvalue()
+                st.session_state['sa_zip_name'] = f'Service_Agreements_{ts}.zip'
+                st.session_state['sa_log'] = log
             else:
                 st.error(log)
+
+        if 'sa_zip' in st.session_state:
+            st.success('Done!')
+            st.code(st.session_state['sa_log'])
+            st.download_button('⬇ Download All PDFs (ZIP)',
+                               data=st.session_state['sa_zip'],
+                               file_name=st.session_state['sa_zip_name'],
+                               mime='application/zip',
+                               key='dl_sa')
     else:
         st.info('Upload your seafarer list and the PDF template to get started.')
 
